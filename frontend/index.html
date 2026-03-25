@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Integrity Monitor — RBAC Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-scene"></div>
+    <div class="grid-floor"></div>
+
+    <!-- ═══════ LOGIN MODAL ═══════ -->
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-card glass-panel">
+            <div class="login-logo">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 class="login-title">SYSTEM ACCESS REQUIRED</h2>
+            <p class="login-subtitle">File Integrity Monitoring System</p>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="login-user" placeholder="USERNAME" autocomplete="username" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="login-pass" placeholder="PASSWORD" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="login-btn" id="login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> AUTHORIZE
+                </button>
+                <div class="login-error" id="login-error"></div>
+            </form>
+            <div class="login-hint">Default: admin / admin123 &nbsp;|&nbsp; user / user123</div>
+        </div>
+    </div>
+
+    <!-- ═══════ DASHBOARD ═══════ -->
+    <div class="app-container" id="dashboard" style="display:none;">
+
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo-box">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="header-text">
+                <h1>FILE INTEGRITY MONITOR</h1>
+                <p>Real-Time Monitoring with MAC Address Logging & RBAC</p>
+            </div>
+            <div class="header-right">
+                <div class="role-badge" id="role-badge">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span id="role-text">ADMIN</span>
+                </div>
+                <div class="user-info">
+                    <span id="current-user">admin</span>
+                    <button class="logout-btn" onclick="handleLogout()">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+                <div class="status-indicator">
+                    <div class="pulse-dot"></div>
+                    <span>LIVE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- IDENTITY BAR -->
+        <section class="identity-bar glass-panel">
+            <div class="identity-item">
+                <i class="fa-solid fa-server"></i>
+                <div class="id-text">
+                    <span class="label">HOSTNAME</span>
+                    <span class="value" id="sys-hostname">—</span>
+                </div>
+            </div>
+            <div class="identity-item">
+                <i class="fa-solid fa-network-wired"></i>
+                <div class="id-text">
+                    <span class="label">IP ADDRESS</span>
+                    <span class="value" id="sys-ip">—</span>
+                </div>
+            </div>
+            <div class="identity-item">
+                <i class="fa-solid fa-microchip"></i>
+                <div class="id-text">
+                    <span class="label">MAC ADDRESS</span>
+                    <span class="value" id="sys-mac">—</span>
+                </div>
+            </div>
+            <div class="identity-item">
+                <i class="fa-solid fa-user-shield"></i>
+                <div class="id-text">
+                    <span class="label">LOGGED USER</span>
+                    <span class="value" id="sys-user">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- STATS GRID -->
+        <section class="stats-grid">
+            <div class="stat-card glass-panel" data-color="blue">
+                <div class="stat-icon"><i class="fa-regular fa-file-code"></i></div>
+                <div class="stat-data">
+                    <h3>TOTAL MONITORED</h3>
+                    <div class="value" id="stat-total">-</div>
+                </div>
+            </div>
+            <div class="stat-card glass-panel" data-color="green">
+                <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
+                <div class="stat-data">
+                    <h3>SAFE FILES</h3>
+                    <div class="value safe" id="stat-safe">-</div>
+                </div>
+            </div>
+            <div class="stat-card glass-panel" data-color="red">
+                <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="stat-data">
+                    <h3>TAMPERED FILES</h3>
+                    <div class="value danger" id="stat-tampered">-</div>
+                </div>
+            </div>
+            <div class="stat-card glass-panel" data-color="purple">
+                <div class="stat-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="stat-data">
+                    <h3>LATEST CHANGED</h3>
+                    <div class="value small" id="stat-latest">None</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN LAYOUT -->
+        <div class="main-layout">
+
+            <!-- FILE OPERATIONS -->
+            <div class="operations-grid">
+                <!-- UPLOAD PANEL -->
+                <div class="operation-panel glass-panel">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> SECURE UPLOAD</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p class="panel-desc">Upload a file to register it for real-time integrity monitoring.</p>
+                        <form id="upload-form" class="file-form" onsubmit="handleFileUpload(event)">
+                            <div class="file-input-wrapper">
+                                <input type="file" id="upload-file" class="file-input" required>
+                                <div class="file-input-ui">
+                                    <i class="fa-solid fa-file-arrow-up"></i>
+                                    <span id="upload-filename">Choose a file...</span>
+                                </div>
+                            </div>
+                            <button type="submit" class="action-btn cyan-btn" id="upload-btn">
+                                <i class="fa-solid fa-upload"></i> REGISTER FILE
+                            </button>
+                        </form>
+                        <div id="upload-result" class="result-msg"></div>
+                    </div>
+                </div>
+
+                <!-- VERIFY PANEL -->
+                <div class="operation-panel glass-panel">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-shield-check"></i> MANUAL VERIFY</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p class="panel-desc">Upload a copy to verify its integrity against the registry trace.</p>
+                        <form id="verify-form" class="file-form" onsubmit="handleFileVerify(event)">
+                            <div class="file-input-wrapper">
+                                <input type="file" id="verify-file" class="file-input" required>
+                                <div class="file-input-ui">
+                                    <i class="fa-solid fa-file-magnifying-glass"></i>
+                                    <span id="verify-filename">Choose a file...</span>
+                                </div>
+                            </div>
+                            <button type="submit" class="action-btn purple-btn" id="verify-btn">
+                                <i class="fa-solid fa-fingerprint"></i> VERIFY INTEGRITY
+                            </button>
+                        </form>
+                        <div id="verify-result" class="result-msg"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USER ACTIVITY LOG -->
+            <div class="activity-section glass-panel">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-user-clock"></i> USER ACTIVITY LOG</h2>
+                    <span class="badge purple" id="activity-scope">ALL USERS</span>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Action</th>
+                                <th>File</th>
+                                <th>MAC Address</th>
+                                <th>IP Address</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-body">
+                            <tr><td colspan="7" class="empty-state">Loading activity log...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAMPER EVENT LOG -->
+            <div class="logs-section glass-panel">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-clipboard-list"></i> TAMPER EVENT HISTORY</h2>
+                    <span class="badge red">Critical Alerts</span>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>File Path</th>
+                                <th>Event Type</th>
+                                <th>Device IP</th>
+                                <th>MAC Address</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-body">
+                            <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MONITORED FILES -->
+            <div class="files-section glass-panel">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-folder-tree"></i> MONITORED REGISTRY</h2>
+                    <button class="btn-refresh" onclick="fetchData()"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Status</th>
+                                <th>Last Checked</th>
+                                <th>Hash (SHA-256)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="files-body">
+                            <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADMIN: REGISTERED USERS (admin only) -->
+            <div class="users-section glass-panel" id="users-panel" style="display:none;">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-users-gear"></i> REGISTERED USERS</h2>
+                    <span class="badge cyan">Admin Only</span>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-body">
+                            <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
